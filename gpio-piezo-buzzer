@@ -1,0 +1,67 @@
+#!/usr/bin/python -u
+import RPi.GPIO as GPIO
+import time, sys, random, argparse, ast
+
+print('Starting ' + __file__ )
+
+try:
+    class Buzzer(object):
+        def __init__(self, gpio):
+            GPIO.setmode(GPIO.BCM)
+            self.pin = gpio  #set to GPIO
+            GPIO.setup(self.pin, GPIO.OUT)
+            self.p = GPIO.PWM(self.pin, 100)
+            self.p.start(0)
+
+        def __del__(self):
+            class_name = self.__class__.__name__
+            print (class_name, 'finished')
+
+        def buzz(self, pitch, duration):
+            self.p.ChangeFrequency(pitch)
+            self.p.ChangeDutyCycle(90)
+            time.sleep(duration)
+            self.p.ChangeDutyCycle(0)
+
+        def play(self, song):
+            for note in song:
+                print("Note: <%s>" % note)
+                self.buzz(note[0], note[1])
+                time.sleep(note[2])
+
+    parser = argparse.ArgumentParser(description='Play buzzer sounds using a GPIO piezo.')
+    parser.add_argument('-g','--gpio', help='GPIO Pin (PWM)',required=True, type=int)
+    parser.add_argument('-s','--song', help='[[PITCH, DURATION, DELAY], ...]',required=False, type=str, default="[[500, 1, 0]]")
+
+    args = parser.parse_args()
+
+    ## show values ##
+    print ("GPIO Pin: <%d>, Song: <%s>" % (args.gpio, args.song))
+
+    song = ast.literal_eval(args.song)
+
+    try:
+        # Create and play buzzer
+        buzzer = Buzzer(args.gpio)
+        buzzer.play(song)
+
+    finally:
+        GPIO.cleanup() # this ensures a clean exit
+        print('Finally Exited')
+
+except KeyboardInterrupt:
+    # here you put any code you want to run before the program
+    # exits when you press CTRL+C
+    print('You Exited')
+
+except SystemExit:
+    # here you put any code you want to run before the program
+    # exits when you press CTRL+C
+    print('SystemExit')
+
+except:
+    # this catches ALL other exceptions including errors.
+    # You won't get any error messages for debugging
+    # so only use it once your code is working
+    print('Unexpected error:', sys.exc_info()[0])
+    raise
